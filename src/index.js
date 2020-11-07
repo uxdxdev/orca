@@ -1,13 +1,61 @@
+#!/usr/bin/env node
+
 const snoowrap = require('snoowrap');
 const fs = require("fs");
+const { program } = require('commander');
+const chalk = require('chalk');
 
 require('dotenv').config()
 
+program
+    .name("orca")
+    .usage("--user-agent=<string> --client-id=<id> --client-secret=<secret> --refresh-token=<token>")
+    .helpOption('-h, --help', 'Display setup steps and options')
+    .description(`Download your Reddit upvotes, saves, and submissions.
+
+Setup steps:
+- Open https://www.reddit.com/prefs/apps/
+- Click ${chalk.bold('Create another app')} button
+- Pick a name, e.g. ${chalk.bold('Orca app')}
+- Select ${chalk.bold('web app')} as the application type
+- Set ${chalk.bold('redirect url')} to https://not-an-aardvark.github.io/reddit-oauth-helper/
+- Click ${chalk.bold('Create app')} button
+- Copy your ${chalk.magenta('client id')}, e.g.
+
+    Orca
+    web app
+    ${chalk.magenta('Ano2QfJc_BZrVg')} (client id)
+    
+- Copy your ${chalk.cyan('client secret')}, e.g.
+
+    secret ${chalk.cyan('vaSdsP6352j2nklizCB5Qfdsa')}
+
+- Open https://not-an-aardvark.github.io/reddit-oauth-helper/
+- Input your ${chalk.bold('client id')} and ${chalk.bold('client secret')}
+- Select ${chalk.bold('Permanent?')}
+- Select scopes
+    - history
+    - identity
+    - read
+- Click ${chalk.bold('Generate tokens')} button
+- Copy your ${chalk.blue('refresh token')}, e.g.
+
+    Refresh token: ${chalk.blue('70162531-R3rT0inhKaoVi1X6mNd2Ei-7BFQ4hA')}
+
+`)
+    .requiredOption('--user-agent <string>', 'User agent string to use in requests to the Reddit API. e.g. Orca app')
+    .requiredOption('--client-id <id>', 'Reddit application client Id')
+    .requiredOption('--client-secret <secret>', 'Reddit application client secret')
+    .requiredOption('--refresh-token <token>', 'Refresh token generated from https://not-an-aardvark.github.io/reddit-oauth-helper/')
+    .requiredOption('--output-dir <directory>', 'Output directory for data .zip file')
+
+program.parse(process.argv);
+
 const r = new snoowrap({
-    userAgent: process.env.USER_AGENT,
-    clientId: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    refreshToken: process.env.REFRESH_TOKEN
+    userAgent: program.userAgent,
+    clientId: program.clientId,
+    clientSecret: program.clientSecret,
+    refreshToken: program.refreshToken
 });
 
 const writeDataToTxtFile = async (directory, filename, data) => {
@@ -32,7 +80,10 @@ const main = async () => {
         savedContentData += 'https://www.reddit.com' + item.permalink + '\n'
     })
 
-    let directory = 'output/saved/'
+    let rootOutputDirectory = program.outputDir;
+
+
+    let directory = rootOutputDirectory + '/saved/'
     let filename = 'reddit_saved_permalinks.txt';
     writeDataToTxtFile(directory, filename, savedContentData);
 
@@ -42,7 +93,7 @@ const main = async () => {
         upvotedContentData += 'https://www.reddit.com' + item.permalink + '\n'
     })
 
-    directory = 'output/upvoted/'
+    directory = rootOutputDirectory + '/upvoted/'
     filename = 'reddit_upvoted_permalinks.txt';
     writeDataToTxtFile(directory, filename, upvotedContentData);
 
@@ -63,10 +114,9 @@ const main = async () => {
         submissionsContentData += '---\n'
     }
 
-    directory = 'output/submissions/'
+    directory = rootOutputDirectory + '/submissions/'
     filename = 'reddit_submissions.txt';
     writeDataToTxtFile(directory, filename, submissionsContentData);
-
 }
 
 main();

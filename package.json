@@ -1,14 +1,19 @@
 {
-  "name": "redditapi",
+  "name": "@mortond/orca",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./src/index.js",
+  "bin": {
+    "orca": "./src/index.js"
+  },
   "scripts": {
     "start": "node src/index.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
+    "chalk": "^4.1.0",
+    "commander": "^6.2.0",
     "dotenv": "^8.2.0",
     "snoowrap": "^1.21.0"
   }
