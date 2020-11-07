@@ -33,7 +33,7 @@ Comments:
 ## How to
 
 ```
-git clone 
+git clone https://github.com/daithimorton/orca.git
 cd orca
 yarn
 yarn start
