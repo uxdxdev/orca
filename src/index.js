@@ -9,7 +9,7 @@ require('dotenv').config()
 
 program
     .name("orca")
-    .usage("--user-agent=<string> --client-id=<id> --client-secret=<secret> --refresh-token=<token>")
+    .usage("--user-agent=<string> --client-id=<id> --client-secret=<secret> --refresh-token=<token> --output-dir=output/")
     .helpOption('-h, --help', 'Display setup steps and options')
     .description(`Download your Reddit upvotes, saves, and submissions.
 
@@ -41,6 +41,14 @@ Setup steps:
 - Copy your ${chalk.blue('refresh token')}, e.g.
 
     Refresh token: ${chalk.blue('70162531-R3rT0inhKaoVi1X6mNd2Ei-7BFQ4hA')}
+
+- Run Orca
+
+    orca --user-agent=${chalk.red('Orca app')} \\
+    --client-id=${chalk.magenta('Ano2QfJc_BZrVg')} \\
+    --client-secret=${chalk.cyan('vaSdsP6352j2nklizCB5Qfdsa')} \\
+    --refresh-token=${chalk.blue('70162531-R3rT0inhKaoVi1X6mNd2Ei-7BFQ4hA')} \\
+    --output-dir=${chalk.yellow('output/')}
 
 `)
     .requiredOption('--user-agent <string>', 'User agent string to use in requests to the Reddit API. e.g. Orca app')
