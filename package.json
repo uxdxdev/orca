@@ -10,12 +10,18 @@
     "start": "node src/index.js"
   },
   "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daithimorton/orca.git"
+  },
+  "keywords": [
+    "reddit"
+  ],
   "license": "MIT",
   "dependencies": {
     "boxen": "^4.2.0",
     "chalk": "^4.1.0",
     "commander": "^6.2.0",
-    "dotenv": "^8.2.0",
     "snoowrap": "^1.21.0"
   }
 }
