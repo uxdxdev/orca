@@ -6,8 +6,6 @@ const { program } = require('commander');
 const chalk = require('chalk');
 const boxen = require('boxen');
 
-require('dotenv').config()
-
 const clientId = 'Ano5GFtJc_BZrVg'
 const clientSecret = 'vfAs98fP632nklizCB5Qfdsa'
 const accessToken = '70162531-R3rT0inhKaoVi1X6mNd2Ei-72dFs4hA'

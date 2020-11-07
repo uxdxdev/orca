@@ -8,7 +8,7 @@ Download your reddit data.
 npx @mortond/orca -h
 ```
 
-## Install 
+## Install globally
 
 ```terminal
 npm i @mortond/orca -g
