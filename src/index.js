@@ -16,10 +16,7 @@ program
     .name("orca")
     .usage("--data=<string> --client-id=<id> --client-secret=<secret> --access-token=<token> --output-dir=output/")
     .helpOption('-h, --help', 'Display setup steps and options')
-    .description(`${boxen(chalk.magentaBright(`Orca`), { padding: 1, margin: 1, borderStyle: 'round' })}
-    
-${chalk.bold('Download your Reddit upvotes, saves, submissions, and comments.')}
-
+    .description(`${boxen(`${chalk.magentaBright('Orca')} - ${chalk.bold('Download your Reddit data.')}`, { padding: 1, margin: 1, borderStyle: 'round' })}
 Setup steps:
 - Open https://www.reddit.com/prefs/apps/
 - Click ${chalk.bold('Create another app')} button
@@ -56,8 +53,8 @@ orca --data=${chalk.bold('upvoted,saved,submissions,comments')} \\
 --client-secret=${chalk.cyan(clientSecret)} \\
 --access-token=${chalk.blue(accessToken)}
 `)
-    .requiredOption('--data <string>', 'Data to download, e.g. upvotes,saved,submissions,comments')
-    .requiredOption('--output-dir <directory>', 'Output directory for data files (.txt)')
+    .option('--data <string>', 'Data to download, e.g. upvotes,saved,submissions,comments', 'upvoted,saved,submissions,comments')
+    .option('--output-dir <directory>', 'Output directory for data files (.txt)', 'orca-output')
     .requiredOption('--client-id <id>', 'Reddit application client Id')
     .requiredOption('--client-secret <secret>', 'Reddit application client secret')
     .requiredOption('--access-token <token>', 'Access token generated from https://not-an-aardvark.github.io/reddit-oauth-helper/')
