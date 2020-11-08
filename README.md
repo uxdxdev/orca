@@ -2,6 +2,8 @@
 
 Download your reddit data.
 
+![orca output](https://i.redd.it/jx4ac94powx51.png)
+
 ## Usage
 
 ```terminal
