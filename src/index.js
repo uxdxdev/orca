@@ -5,16 +5,18 @@ const fs = require("fs");
 const { program } = require('commander');
 const chalk = require('chalk');
 const boxen = require('boxen');
+const ora = require('ora');
 
 const clientId = 'Ano5_FAKE_BZrVg'
 const clientSecret = 'vfAs98fP_FAKE_lizCB5Qfdsa'
 const accessToken = '70162531-R3rT0i_FAKE_Vi1X6mNd2Ei-72dFs4hA'
+const heading = boxen(`${chalk.magentaBright('Orca')} - ${chalk.bold('Download your Reddit data.')}`, { padding: 1, margin: 1, borderStyle: 'round' })
 
 program
     .name("orca")
-    .usage("--data=<string> --client-id=<id> --client-secret=<secret> --access-token=<token> --output-dir=output/")
+    .usage("--data=<string> --output-dir=output/ --client-id=<id> --client-secret=<secret> --access-token=<token>")
     .helpOption('-h, --help', 'Display setup steps and options')
-    .description(`${boxen(`${chalk.magentaBright('Orca')} - ${chalk.bold('Download your Reddit data.')}`, { padding: 1, margin: 1, borderStyle: 'round' })}
+    .description(`${heading}
 Setup steps:
 - Open https://www.reddit.com/prefs/apps/
 - Click ${chalk.bold('Create another app')} button
@@ -53,9 +55,9 @@ npx @mortond/orca --data=${chalk.bold('upvoted,saved,submissions,comments')} \\
 `)
     .option('--data <string>', 'Data to download, e.g. upvoted,saved,submissions,comments', 'upvoted,saved,submissions,comments')
     .option('--output-dir <directory>', 'Output directory for data files (.txt)', 'orca-output')
-    .requiredOption('--client-id <id>', 'Reddit application client Id')
-    .requiredOption('--client-secret <secret>', 'Reddit application client secret')
-    .requiredOption('--access-token <token>', 'Access token generated from https://not-an-aardvark.github.io/reddit-oauth-helper/')
+    .requiredOption('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
+    .requiredOption('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
+    .requiredOption('--access-token <token>', 'Access token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/')
 
 program.parse(process.argv);
 
@@ -70,19 +72,27 @@ const r = new snoowrap({
 r.config({ continueAfterRatelimitError: true });
 
 const writeDataToTxtFile = async (directory, filename, data) => {
+    const spinner = ora(`Writing data to ${chalk.magentaBright(`${directory + filename}`)}`).start();
     fs.mkdir(directory, { recursive: true }, (err) => {
-        if (err) throw err;
+        if (err) {
+            spinner.fail()
+            throw err;
+        }
 
         fs.writeFile(directory + filename, data, err => {
-            if (err) throw err;
-            console.log(`Content written to file ${directory + filename}`);
+            if (err) {
+                spinner.fail()
+                throw err;
+            }
+            spinner.succeed()
         });
     });
 }
 
 const getSavedContent = async () => {
-    console.log('fetching saved content')
-    const savedContent = await r.getMe().getSavedContent().fetchAll()
+    const spinner = ora(`Fetching ${chalk.magentaBright('saved')} content`).start();
+    const savedContent = await r.getMe().getSavedContent().fetchAll().catch(() => spinner.fail())
+    spinner.succeed();
     let savedContentData = ''
     savedContent.forEach(item => {
         savedContentData += 'https://www.reddit.com' + item.permalink + '\n'
@@ -91,8 +101,9 @@ const getSavedContent = async () => {
 }
 
 const getUpvotedContent = async () => {
-    console.log('fetching upvoted content')
-    const upvotedContent = await r.getMe().getUpvotedContent().fetchAll()
+    const spinner = ora(`Fetching ${chalk.magentaBright('upvoted')} content`).start();
+    const upvotedContent = await r.getMe().getUpvotedContent().fetchAll().catch(() => spinner.fail())
+    spinner.succeed();
     let upvotedContentData = ''
     upvotedContent.forEach(item => {
         upvotedContentData += 'https://www.reddit.com' + item.permalink + '\n'
@@ -101,8 +112,9 @@ const getUpvotedContent = async () => {
 }
 
 const getSubmissionsContent = async () => {
-    console.log('fetching submissions content')
-    const submissionsContent = await r.getMe().getSubmissions().fetchAll()
+    const spinner = ora(`Fetching ${chalk.magentaBright('submissions')} content`).start();
+    const submissionsContent = await r.getMe().getSubmissions().fetchAll().catch(() => spinner.fail())
+    spinner.succeed();
     let submissionsContentData = ''
     for (const submission of submissionsContent) {
         submissionsContentData += 'Title: ' + submission.title + '\n'
@@ -120,8 +132,9 @@ const getSubmissionsContent = async () => {
 }
 
 const getCommentsContent = async () => {
-    console.log('fetching comments content')
-    const commentsContent = await r.getMe().getComments().fetchAll()
+    const spinner = ora(`Fetching ${chalk.magentaBright('comments')} content`).start();
+    const commentsContent = await r.getMe().getComments().fetchAll().catch(() => spinner.fail())
+    spinner.succeed();
     let commentsContentData = ''
     for (const comment of commentsContent) {
         commentsContentData += 'Post Title: ' + comment.link_title + '\n'
@@ -133,6 +146,9 @@ const getCommentsContent = async () => {
 }
 
 const main = () => {
+
+    console.log(heading)
+
     let rootOutputDirectory = program.outputDir;
 
     const dataToDownload = program.data.split(',');
