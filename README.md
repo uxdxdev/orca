@@ -2,7 +2,12 @@
 
 Download your reddit data.
 
-![orca output](https://i.redd.it/jx4ac94powx51.png)
+- Upvoted
+- Saved
+- Submissions
+- Comments
+
+This data is written to `.txt` files in the `--output-dir`.
 
 ## Usage
 
