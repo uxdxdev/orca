@@ -1,6 +1,6 @@
 # Orca 
 
-Download your reddit data.
+![Orca](https://i.imgur.com/cPCbEmv.png)
 
 - Upvoted
 - Saved
