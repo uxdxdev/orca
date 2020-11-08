@@ -6,9 +6,9 @@ const { program } = require('commander');
 const chalk = require('chalk');
 const boxen = require('boxen');
 
-const clientId = 'Ano5GFtJc_BZrVg'
-const clientSecret = 'vfAs98fP632nklizCB5Qfdsa'
-const accessToken = '70162531-R3rT0inhKaoVi1X6mNd2Ei-72dFs4hA'
+const clientId = 'Ano5_FAKE_BZrVg'
+const clientSecret = 'vfAs98fP_FAKE_lizCB5Qfdsa'
+const accessToken = '70162531-R3rT0i_FAKE_Vi1X6mNd2Ei-72dFs4hA'
 
 program
     .name("orca")
