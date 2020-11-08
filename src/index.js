@@ -51,7 +51,7 @@ orca --data=${chalk.bold('upvoted,saved,submissions,comments')} \\
 --client-secret=${chalk.cyan(clientSecret)} \\
 --access-token=${chalk.blue(accessToken)}
 `)
-    .option('--data <string>', 'Data to download, e.g. upvotes,saved,submissions,comments', 'upvoted,saved,submissions,comments')
+    .option('--data <string>', 'Data to download, e.g. upvoted,saved,submissions,comments', 'upvoted,saved,submissions,comments')
     .option('--output-dir <directory>', 'Output directory for data files (.txt)', 'orca-output')
     .requiredOption('--client-id <id>', 'Reddit application client Id')
     .requiredOption('--client-secret <secret>', 'Reddit application client secret')
