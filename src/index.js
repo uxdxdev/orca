@@ -45,7 +45,7 @@ Setup steps:
 
 - Run Orca
 
-orca --data=${chalk.bold('upvoted,saved,submissions,comments')} \\
+npx @mortond/orca --data=${chalk.bold('upvoted,saved,submissions,comments')} \\
 --output-dir=${chalk.bold('output/')} \\
 --client-id=${chalk.magenta(clientId)} \\
 --client-secret=${chalk.cyan(clientSecret)} \\
