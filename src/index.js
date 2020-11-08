@@ -66,19 +66,23 @@ const r = new snoowrap({
     accessToken: program.accessToken
 });
 
+// queue requests if rate limit is hit
+r.config({ continueAfterRatelimitError: true });
+
 const writeDataToTxtFile = async (directory, filename, data) => {
     fs.mkdir(directory, { recursive: true }, (err) => {
         if (err) throw err;
 
         fs.writeFile(directory + filename, data, err => {
             if (err) throw err;
-            console.log(`Content written to file ${filename}`);
+            console.log(`Content written to file ${directory + filename}`);
         });
     });
 }
 
 const getSavedContent = async () => {
-    const savedContent = await r.getMe().getSavedContent()
+    console.log('fetching saved content')
+    const savedContent = await r.getMe().getSavedContent().fetchAll()
     let savedContentData = ''
     savedContent.forEach(item => {
         savedContentData += 'https://www.reddit.com' + item.permalink + '\n'
@@ -87,7 +91,8 @@ const getSavedContent = async () => {
 }
 
 const getUpvotedContent = async () => {
-    const upvotedContent = await r.getMe().getUpvotedContent()
+    console.log('fetching upvoted content')
+    const upvotedContent = await r.getMe().getUpvotedContent().fetchAll()
     let upvotedContentData = ''
     upvotedContent.forEach(item => {
         upvotedContentData += 'https://www.reddit.com' + item.permalink + '\n'
@@ -96,7 +101,8 @@ const getUpvotedContent = async () => {
 }
 
 const getSubmissionsContent = async () => {
-    const submissionsContent = await r.getMe().getSubmissions()
+    console.log('fetching submissions content')
+    const submissionsContent = await r.getMe().getSubmissions().fetchAll()
     let submissionsContentData = ''
     for (const submission of submissionsContent) {
         submissionsContentData += 'Title: ' + submission.title + '\n'
@@ -104,7 +110,7 @@ const getSubmissionsContent = async () => {
         submissionsContentData += 'Comments:\n'
 
         // comments
-        const comments = await submission.comments.fetchAll();
+        const comments = await submission.comments.fetchAll()
         comments.forEach(comment => {
             submissionsContentData += '> ' + comment.body.replace(/\n/g, '') + '\n'
         })
@@ -114,7 +120,8 @@ const getSubmissionsContent = async () => {
 }
 
 const getCommentsContent = async () => {
-    const commentsContent = await r.getMe().getComments()
+    console.log('fetching comments content')
+    const commentsContent = await r.getMe().getComments().fetchAll()
     let commentsContentData = ''
     for (const comment of commentsContent) {
         commentsContentData += 'Post Title: ' + comment.link_title + '\n'
@@ -125,41 +132,45 @@ const getCommentsContent = async () => {
     return commentsContentData
 }
 
-const main = async () => {
+const main = () => {
     let rootOutputDirectory = program.outputDir;
 
     const dataToDownload = program.data.split(',');
 
     if (dataToDownload.includes('saved')) {
         // saved content
-        let savedContentData = await getSavedContent();
-        let directory = rootOutputDirectory + '/saved/'
-        let filename = 'reddit_saved_permalinks.txt';
-        writeDataToTxtFile(directory, filename, savedContentData);
+        getSavedContent().then(result => {
+            let directory = rootOutputDirectory + '/saved/'
+            let filename = 'reddit_saved_permalinks.txt';
+            writeDataToTxtFile(directory, filename, result);
+        });
     }
 
     if (dataToDownload.includes('upvoted')) {
         // upvoted content
-        let upvotedContentData = await getUpvotedContent();
-        directory = rootOutputDirectory + '/upvoted/'
-        filename = 'reddit_upvoted_permalinks.txt';
-        writeDataToTxtFile(directory, filename, upvotedContentData);
+        getUpvotedContent().then(result => {
+            directory = rootOutputDirectory + '/upvoted/'
+            filename = 'reddit_upvoted_permalinks.txt';
+            writeDataToTxtFile(directory, filename, result);
+        })
     }
 
     if (dataToDownload.includes('submissions')) {
         // submissions
-        let submissionsContentData = await getSubmissionsContent();
-        directory = rootOutputDirectory + '/submissions/'
-        filename = 'reddit_submissions.txt';
-        writeDataToTxtFile(directory, filename, submissionsContentData);
+        getSubmissionsContent().then(result => {
+            directory = rootOutputDirectory + '/submissions/'
+            filename = 'reddit_submissions.txt';
+            writeDataToTxtFile(directory, filename, result);
+        })
     }
 
     if (dataToDownload.includes('comments')) {
         // comments
-        let commentsContentData = await getCommentsContent();
-        directory = rootOutputDirectory + '/comments/'
-        filename = 'reddit_comments.txt';
-        writeDataToTxtFile(directory, filename, commentsContentData);
+        getCommentsContent().then(result => {
+            directory = rootOutputDirectory + '/comments/'
+            filename = 'reddit_comments.txt';
+            writeDataToTxtFile(directory, filename, result);
+        })
     }
 }
 
