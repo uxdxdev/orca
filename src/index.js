@@ -7,9 +7,9 @@ const chalk = require('chalk');
 const boxen = require('boxen');
 const ora = require('ora');
 
-const clientId = 'Ano5_FAKE_BZrVg'
-const clientSecret = 'vfAs98fP_FAKE_lizCB5Qfdsa'
-const accessToken = '70162531-R3rT0i_FAKE_Vi1X6mNd2Ei-72dFs4hA'
+const clientId = 'FlF8aE_FAKE_gpYa_LNw'
+const clientSecret = 'z1KNAUb_c0MF7_FAKE_hGyR8lfHCQjnzJtGw'
+const accessToken = '70162531-eWBggyup_FAKE_Usdf1cz7u-G9pM_dhrVf3g'
 const heading = boxen(`${chalk.magentaBright('Orca')} - ${chalk.bold('Download your Reddit data.')}`, { padding: 1, margin: 1, borderStyle: 'round' })
 
 program
@@ -156,8 +156,8 @@ const main = () => {
     if (dataToDownload.includes('saved')) {
         // saved content
         getSavedContent().then(result => {
-            let directory = rootOutputDirectory + '/saved/'
-            let filename = 'reddit_saved_permalinks.txt';
+            const directory = rootOutputDirectory + '/saved/'
+            const filename = 'reddit_saved_permalinks.txt';
             writeDataToTxtFile(directory, filename, result);
         });
     }
@@ -165,8 +165,8 @@ const main = () => {
     if (dataToDownload.includes('upvoted')) {
         // upvoted content
         getUpvotedContent().then(result => {
-            directory = rootOutputDirectory + '/upvoted/'
-            filename = 'reddit_upvoted_permalinks.txt';
+            const directory = rootOutputDirectory + '/upvoted/'
+            const filename = 'reddit_upvoted_permalinks.txt';
             writeDataToTxtFile(directory, filename, result);
         })
     }
@@ -174,8 +174,8 @@ const main = () => {
     if (dataToDownload.includes('submissions')) {
         // submissions
         getSubmissionsContent().then(result => {
-            directory = rootOutputDirectory + '/submissions/'
-            filename = 'reddit_submissions.txt';
+            const directory = rootOutputDirectory + '/submissions/'
+            const filename = 'reddit_submissions.txt';
             writeDataToTxtFile(directory, filename, result);
         })
     }
@@ -183,8 +183,8 @@ const main = () => {
     if (dataToDownload.includes('comments')) {
         // comments
         getCommentsContent().then(result => {
-            directory = rootOutputDirectory + '/comments/'
-            filename = 'reddit_comments.txt';
+            const directory = rootOutputDirectory + '/comments/'
+            const filename = 'reddit_comments.txt';
             writeDataToTxtFile(directory, filename, result);
         })
     }
