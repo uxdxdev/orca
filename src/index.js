@@ -45,21 +45,17 @@ Setup steps:
 
     Access token: ${chalk.blue(accessToken)}
 
-- Run Orca with your client id, client secret, and access token
+- Run Orca
 
-npx @mortond/orca --data=${chalk.bold('upvoted,saved,submissions,comments')} \\
---format=${chalk.bold('csv')} \\
---output-dir=${chalk.bold('output/')} \\
---client-id=${chalk.magenta(clientId)} \\
---client-secret=${chalk.cyan(clientSecret)} \\
---access-token=${chalk.blue(accessToken)}
+npx @mortond/orca --access-token=${chalk.blue(accessToken)}
 `)
     .option('--data <string>', 'Data to download in a comma separated string e.g. upvoted,saved', 'upvoted,saved,submissions,comments')
     .option('--output-dir <directory>', 'Output directory for data files', 'orca-output')
     .option('--format <string>', 'Format of the downloaded data e.g. csv, text, json', 'csv')
-    .requiredOption('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
-    .requiredOption('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
-    .requiredOption('--access-token <token>', 'Access token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/')
+    .option('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
+    .option('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
+    .option('--access-token <token>', 'Access token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/. This token type is only valid for a short time.')
+    .option('--refresh-token <token>', 'Refresh token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/. Use this for longer running jobs e.g. cron')
 
 program.parse(process.argv);
 
@@ -67,7 +63,8 @@ const r = new snoowrap({
     userAgent: 'Orca app',
     clientId: program.clientId,
     clientSecret: program.clientSecret,
-    accessToken: program.accessToken
+    accessToken: program.accessToken,
+    refreshToken: program.refreshToken
 });
 
 // queue requests if rate limit is hit

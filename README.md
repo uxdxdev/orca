@@ -16,8 +16,6 @@ npx @mortond/orca -h
 
 ## Usage
 
-![Orca](./demo.gif)
-
 ```terminal
 npx @mortond/orca --data=upvoted,saved,comments,submissions \
 --format=csv \
