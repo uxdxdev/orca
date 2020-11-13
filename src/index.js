@@ -14,7 +14,7 @@ const heading = boxen(`${chalk.magentaBright('Orca')} - ${chalk.bold('Download y
 
 program
     .name("orca")
-    .usage("--data=<string> --output-dir=output/ --client-id=<id> --client-secret=<secret> --access-token=<token>")
+    .usage("--access-token=<token>")
     .helpOption('-h, --help', 'Display setup steps and options')
     .description(`${heading}
 Setup steps:
