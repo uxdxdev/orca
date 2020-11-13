@@ -19,7 +19,7 @@ program
     .description(`${heading}
 Setup steps:
 - Open https://www.reddit.com/prefs/apps/
-- Click ${chalk.bold('Create another app')} button
+- Click ${chalk.bold('Create app')} button
 - Pick a name, e.g. ${chalk.bold('Orca web app')}
 - Select ${chalk.bold('web app')} as the application type
 - Set ${chalk.bold('redirect url')} to https://not-an-aardvark.github.io/reddit-oauth-helper/
@@ -40,21 +40,23 @@ Setup steps:
     - history
     - identity
     - read
-- Click ${chalk.bold('Generate tokens')} button
+- Click ${chalk.bold('Generate tokens')} button and then click ${chalk.bold('Allow')}
 - Copy your ${chalk.blue('access token')} from the bottom of the page, e.g.
 
     Access token: ${chalk.blue(accessToken)}
 
-- Run Orca
+- Run Orca with your client id, client secret, and access token
 
 npx @mortond/orca --data=${chalk.bold('upvoted,saved,submissions,comments')} \\
+--format=${chalk.bold('csv')} \\
 --output-dir=${chalk.bold('output/')} \\
 --client-id=${chalk.magenta(clientId)} \\
 --client-secret=${chalk.cyan(clientSecret)} \\
 --access-token=${chalk.blue(accessToken)}
 `)
-    .option('--data <string>', 'Data to download, e.g. upvoted,saved,submissions,comments', 'upvoted,saved,submissions,comments')
-    .option('--output-dir <directory>', 'Output directory for data files (.txt)', 'orca-output')
+    .option('--data <string>', 'Data to download in a comma separated string e.g. upvoted,saved', 'upvoted,saved,submissions,comments')
+    .option('--output-dir <directory>', 'Output directory for data files', 'orca-output')
+    .option('--format <string>', 'Format of the downloaded data e.g. csv, text, json', 'csv')
     .requiredOption('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
     .requiredOption('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
     .requiredOption('--access-token <token>', 'Access token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/')
@@ -71,15 +73,22 @@ const r = new snoowrap({
 // queue requests if rate limit is hit
 r.config({ continueAfterRatelimitError: true });
 
-const writeDataToTxtFile = async (directory, filename, data) => {
-    const spinner = ora(`Writing data to ${chalk.magentaBright(`${directory + filename}`)}`).start();
+const writeDataToFile = async ({ directory, filename, data, format }) => {
+    const fileExtension = '.' + format
+    const spinner = ora(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`).start();
+
+    if (!data || !data.length) {
+        spinner.fail('No data to write')
+        return;
+    }
+
     fs.mkdir(directory, { recursive: true }, (err) => {
         if (err) {
             spinner.fail()
             throw err;
         }
 
-        fs.writeFile(directory + filename, data, err => {
+        fs.writeFile(directory + filename + fileExtension, data, err => {
             if (err) {
                 spinner.fail()
                 throw err;
@@ -91,101 +100,178 @@ const writeDataToTxtFile = async (directory, filename, data) => {
 
 const getSavedContent = async () => {
     const spinner = ora(`Fetching ${chalk.magentaBright('saved')} content`).start();
-    const savedContent = await r.getMe().getSavedContent().fetchAll().catch(() => spinner.fail())
+    const savedContent = await r.getMe().getSavedContent().fetchAll().catch(() => [])
+
+    if (!savedContent || !savedContent.length) {
+        spinner.fail(`Cannot fetch ${chalk.magentaBright('saved')} data. Try using a new access token.`)
+        return;
+    }
+
     spinner.succeed();
-    let savedContentData = ''
-    savedContent.forEach(item => {
-        savedContentData += 'https://www.reddit.com' + item.permalink + '\n'
+
+    return savedContent.map(item => {
+        return {
+            id: item.id,
+            link: 'https://www.reddit.com' + item.permalink
+        }
     })
-    return savedContentData
 }
 
 const getUpvotedContent = async () => {
     const spinner = ora(`Fetching ${chalk.magentaBright('upvoted')} content`).start();
-    const upvotedContent = await r.getMe().getUpvotedContent().fetchAll().catch(() => spinner.fail())
-    spinner.succeed();
-    let upvotedContentData = ''
-    upvotedContent.forEach(item => {
-        upvotedContentData += 'https://www.reddit.com' + item.permalink + '\n'
+    const upvotedContent = await r.getMe().getUpvotedContent().fetchAll().catch(() => [])
+
+    if (!upvotedContent || !upvotedContent.length) {
+        spinner.fail(`Cannot fetch ${chalk.magentaBright('upvoted')} data. Try using a new access token.`)
+        return;
+    }
+
+    spinner.succeed()
+
+    return upvotedContent.map(item => {
+        return {
+            id: item.id,
+            link: 'https://www.reddit.com' + item.permalink
+        }
     })
-    return upvotedContentData
 }
 
 const getSubmissionsContent = async () => {
     const spinner = ora(`Fetching ${chalk.magentaBright('submissions')} content`).start();
-    const submissionsContent = await r.getMe().getSubmissions().fetchAll().catch(() => spinner.fail())
-    spinner.succeed();
-    let submissionsContentData = ''
-    for (const submission of submissionsContent) {
-        submissionsContentData += 'Title: ' + submission.title + '\n'
-        submissionsContentData += 'Body: ' + submission.selftext + '\n'
-        submissionsContentData += 'Comments:\n'
+    const submissionsContent = await r.getMe().getSubmissions().fetchAll().catch(() => [])
 
-        // comments
-        const comments = await submission.comments.fetchAll()
-        comments.forEach(comment => {
-            submissionsContentData += '> ' + comment.body.replace(/\n/g, '') + '\n'
-        })
-        submissionsContentData += '---\n'
+    if (!submissionsContent || !submissionsContent.length) {
+        spinner.fail(`Cannot fetch ${chalk.magentaBright('submissions')} data. Try using a new access token.`)
+        return;
     }
-    return submissionsContentData
+
+    spinner.succeed();
+
+    const result = []
+    for (const submission of submissionsContent) {
+        const comments = await submission.comments.fetchAll()
+        let submissionsContentData = ''
+        comments.forEach(comment => {
+            submissionsContentData += ' > ' + comment.body.replace(/\n/g, '')
+        })
+        result.push({
+            id: submission.id,
+            title: submission.title,
+            body: submission.selftext === '' ? submission.url : submission.selftext,
+            comments: submissionsContentData
+        })
+    }
+
+    return result;
 }
 
 const getCommentsContent = async () => {
     const spinner = ora(`Fetching ${chalk.magentaBright('comments')} content`).start();
-    const commentsContent = await r.getMe().getComments().fetchAll().catch(() => spinner.fail())
-    spinner.succeed();
-    let commentsContentData = ''
-    for (const comment of commentsContent) {
-        commentsContentData += 'Post Title: ' + comment.link_title + '\n'
-        commentsContentData += 'Comment: ' + comment.body.replace(/\n/g, '') + '\n'
-        commentsContentData += 'Link: https://www.reddit.com' + comment.permalink + '\n'
-        commentsContentData += '---\n'
+    const commentsContent = await r.getMe().getComments().fetchAll().catch(() => [])
+
+    if (!commentsContent || !commentsContent.length) {
+        spinner.fail(`Cannot fetch ${chalk.magentaBright('comments')} data. Try using a new access token.`)
+        return;
     }
-    return commentsContentData
+
+    spinner.succeed();
+
+    return commentsContent.map(item => {
+        return {
+            id: item.id,
+            title: item.link_title,
+            body: item.body.replace(/\n/gm, ''),
+            link: 'https://www.reddit.com' + item.permalink
+        }
+    })
+}
+
+const formatCsv = (data) => {
+    if (!data || !data.length) return []
+
+    const array = [Object.keys(data[0])].concat(data)
+    return array.map(item => {
+        return Object.values(item).map(entry => entry.replace(/\n|\r|,/gm, ' ')).toString()
+    }).join('\n')
+}
+
+const formatTxt = (data) => {
+    if (!data || !data.length) return []
+
+    let result = ''
+    data.forEach(item => {
+        Object.keys(item).forEach(key => {
+            result += `${key}: ${item[key].replace(/\n|\r/gm, ' ')}\n`
+        })
+
+        result += `---` + `\n`
+    })
+    return result
+}
+
+const formatJson = (data) => {
+    return JSON.stringify(data)
 }
 
 const main = () => {
 
     console.log(heading)
 
+    // --output-dir
     let rootOutputDirectory = program.outputDir;
 
+    // --format
+    let formatter;
+    let format = program.format.split(',')[0].replace(/'.'/g, '');
+    if (format === 'txt') {
+        formatter = formatTxt
+    } else if (format === 'json') {
+        formatter = formatJson
+    } else {
+        formatter = formatCsv
+
+        // if the user provides and incorrect format string e.g. --format=jsozzz
+        // then the formatter will default to csv and reset the format string
+        // for the data writer.
+        format = 'csv'
+    }
+
+    // --data
     const dataToDownload = program.data.split(',');
 
     if (dataToDownload.includes('saved')) {
         // saved content
-        getSavedContent().then(result => {
+        getSavedContent().then(formatter).then(data => {
             const directory = rootOutputDirectory + '/saved/'
-            const filename = 'reddit_saved_permalinks.txt';
-            writeDataToTxtFile(directory, filename, result);
+            const filename = 'reddit_saved_permalinks';
+            writeDataToFile({ directory, filename, data, format });
         });
     }
 
     if (dataToDownload.includes('upvoted')) {
         // upvoted content
-        getUpvotedContent().then(result => {
+        getUpvotedContent().then(formatter).then(data => {
             const directory = rootOutputDirectory + '/upvoted/'
-            const filename = 'reddit_upvoted_permalinks.txt';
-            writeDataToTxtFile(directory, filename, result);
+            const filename = 'reddit_upvoted_permalinks';
+            writeDataToFile({ directory, filename, data, format });
         })
     }
 
     if (dataToDownload.includes('submissions')) {
         // submissions
-        getSubmissionsContent().then(result => {
+        getSubmissionsContent().then(formatter).then(data => {
             const directory = rootOutputDirectory + '/submissions/'
-            const filename = 'reddit_submissions.txt';
-            writeDataToTxtFile(directory, filename, result);
+            const filename = 'reddit_submissions';
+            writeDataToFile({ directory, filename, data, format });
         })
     }
 
     if (dataToDownload.includes('comments')) {
         // comments
-        getCommentsContent().then(result => {
+        getCommentsContent().then(formatter).then(data => {
             const directory = rootOutputDirectory + '/comments/'
-            const filename = 'reddit_comments.txt';
-            writeDataToTxtFile(directory, filename, result);
+            const filename = 'reddit_comments';
+            writeDataToFile({ directory, filename, data, format });
         })
     }
 }

@@ -8,8 +8,6 @@ Download your Reddit data:
 - Submissions
 - Comments
 
-This data is written to `.txt` files in the `--output-dir`, default is `${PWD}/orca-output/`
-
 ## Help
 
 ```terminal
@@ -22,6 +20,7 @@ npx @mortond/orca -h
 
 ```terminal
 npx @mortond/orca --data=upvoted,saved,comments,submissions \
+--format=csv \
 --output-dir=orca-output \
 --client-id=FlF8aEgpYa_LNw \
 --client-secret=z1KNAUb_c0MF7hGyR8lfHCQjnzJtGw \
