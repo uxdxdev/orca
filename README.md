@@ -17,12 +17,7 @@ npx @mortond/orca -h
 ## Usage
 
 ```terminal
-npx @mortond/orca --data=upvoted,saved,comments,submissions \
---format=csv \
---output-dir=orca-output \
---client-id=FlF8aEgpYa_LNw \
---client-secret=z1KNAUb_c0MF7hGyR8lfHCQjnzJtGw \
---access-token=70162531-eWBggyupUsdf1cz7u-G9pM_dhrVf3g
+npx @mortond/orca --access-token=70162531-eWBggyup_FAKE_Usdf1cz7u-G9pM_dhrVf3g
 ```
 
 ### Install globally
