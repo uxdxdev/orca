@@ -207,6 +207,8 @@ const formatTxt = (data) => {
 }
 
 const formatJson = (data) => {
+    if (!data || !data.length) return []
+
     return JSON.stringify(data)
 }
 
