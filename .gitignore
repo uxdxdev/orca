@@ -4,3 +4,4 @@ orca-output
 .env
 .DS_Store
 package-lock.json
+orca.config.json

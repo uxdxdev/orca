@@ -52,9 +52,11 @@ npx @mortond/orca --access-token=${chalk.blue(accessToken)}
     .option('--data <string>', 'Data to download in a comma separated string e.g. upvoted,saved', 'upvoted,saved,submissions,comments')
     .option('--output-dir <directory>', 'Output directory for data files', 'orca-output')
     .option('--format <string>', 'Format of the downloaded data e.g. csv, text, json', 'csv')
+    .option('--only-latest <boolean>', 'Only download the latest data. See orca.config.json', false)
+    .option('--config <string>', 'Path to Orca configuration file', './orca.config.json')
     .option('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
     .option('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
-    .option('--access-token <token>', 'Access token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/. This token type is only valid for a short time.')
+    .option('--access-token <token>', 'Access token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/. This token type is only valid for a short time')
     .option('--refresh-token <token>', 'Refresh token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/. Use this for longer running jobs e.g. cron')
 
 program.parse(process.argv);
@@ -70,18 +72,19 @@ const r = new snoowrap({
 // queue requests if rate limit is hit
 r.config({ continueAfterRatelimitError: true });
 
-const writeDataToFile = async ({ directory, filename, data, format }) => {
+const writeDataToFile = async ({ rootOutputDirectory, dataType, filename, data, format }) => {
     const fileExtension = '.' + format
+    const directory = rootOutputDirectory + '/' + dataType + '/'
     const spinner = ora(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`).start();
 
     if (!data || !data.length) {
-        spinner.fail('No data to write')
+        spinner.fail(`No data to write to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`)
         return;
     }
 
     fs.mkdir(directory, { recursive: true }, (err) => {
         if (err) {
-            spinner.fail()
+            spinner.fail(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`)
             throw err;
         }
 
@@ -95,90 +98,153 @@ const writeDataToFile = async ({ directory, filename, data, format }) => {
     });
 }
 
-const getSavedContent = async () => {
-    const spinner = ora(`Fetching ${chalk.magentaBright('saved')} content`).start();
-    const savedContent = await r.getMe().getSavedContent().fetchAll().catch(() => [])
+const getOptions = ({ dataType, dataIdPrefix, config, onlyLatest }) => {
+    let options = config.options;
+    let data = config.data;
 
-    if (!savedContent || !savedContent.length) {
-        spinner.fail(`Cannot fetch ${chalk.magentaBright('saved')} data. Try using a new access token.`)
-        return;
+    // get the latest entry for this data type
+    if (onlyLatest) {
+        const latestEntry = data[dataType].latest
+        if (latestEntry) {
+            options.before = `${dataIdPrefix}${latestEntry}`
+        }
     }
+    return options
+}
+
+const getSpinner = (dataType) => {
+    const spinner = ora(`Fetching ${chalk.magentaBright(dataType)} content`)
+    return {
+        start: () => spinner.start(),
+        fail: (error) => spinner.fail(`Failed to fetch ${chalk.magentaBright(dataType)} content. ${error}`),
+        succeed: () => spinner.succeed()
+    }
+
+}
+const getSavedContent = async ({ config, onlyLatest }) => {
+    const dataType = 'saved'
+
+    const options = getOptions({ dataType, dataIdPrefix: 't3_', config, onlyLatest })
+
+    const spinner = getSpinner(dataType)
+    spinner.start();
+
+    let data = await r.getMe().getSavedContent(options)
+        .then(async listing => {
+            if (!onlyLatest) return await listing.fetchAll()
+            return listing
+        })
+        .catch(error => error.statusCode)
+
+
+    if (!Array.isArray(data)) return spinner.fail(data)
 
     spinner.succeed();
 
-    return savedContent.map(item => {
+    return data.map(item => {
         return {
             id: item.id,
-            link: 'https://www.reddit.com' + item.permalink
+            type: dataType,
+            link: 'https://www.reddit.com' + item.permalink,
         }
     })
 }
 
-const getUpvotedContent = async () => {
-    const spinner = ora(`Fetching ${chalk.magentaBright('upvoted')} content`).start();
-    const upvotedContent = await r.getMe().getUpvotedContent().fetchAll().catch(() => [])
+const getUpvotedContent = async ({ config, onlyLatest }) => {
+    const dataType = 'upvoted'
 
-    if (!upvotedContent || !upvotedContent.length) {
-        spinner.fail(`Cannot fetch ${chalk.magentaBright('upvoted')} data. Try using a new access token.`)
-        return;
-    }
+    const options = getOptions({ dataType, dataIdPrefix: 't3_', config, onlyLatest })
+
+    const spinner = getSpinner(dataType)
+    spinner.start();
+
+    let data = await r.getMe().getUpvotedContent(options)
+        .then(async listing => {
+            if (!onlyLatest) return await listing.fetchAll()
+            return listing
+        })
+        .catch(error => error.statusCode)
+
+    if (!Array.isArray(data)) return spinner.fail(data)
 
     spinner.succeed()
 
-    return upvotedContent.map(item => {
+    return data.map(item => {
         return {
             id: item.id,
-            link: 'https://www.reddit.com' + item.permalink
+            type: dataType,
+            link: 'https://www.reddit.com' + item.permalink,
         }
     })
 }
 
-const getSubmissionsContent = async () => {
-    const spinner = ora(`Fetching ${chalk.magentaBright('submissions')} content`).start();
-    const submissionsContent = await r.getMe().getSubmissions().fetchAll().catch(() => [])
+const getSubmissionsContent = async ({ config, onlyLatest }) => {
+    const dataType = 'submissions'
 
-    if (!submissionsContent || !submissionsContent.length) {
-        spinner.fail(`Cannot fetch ${chalk.magentaBright('submissions')} data. Try using a new access token.`)
-        return;
-    }
+    const options = getOptions({ dataType, dataIdPrefix: 't3_', config, onlyLatest })
+
+    const spinner = getSpinner(dataType)
+    spinner.start();
+
+    let data = await r.getMe().getSubmissions(options)
+        .then(async listing => {
+            if (!onlyLatest) return await listing.fetchAll()
+            return listing
+        })
+        .catch(error => error.statusCode)
+
+
+    if (!Array.isArray(data)) return spinner.fail(data)
 
     spinner.succeed();
 
     const result = []
-    for (const submission of submissionsContent) {
-        const comments = await submission.comments.fetchAll()
+    for (const submission of data) {
         let submissionsContentData = ''
-        comments.forEach(comment => {
-            submissionsContentData += ' > ' + comment.body.replace(/\n/g, '')
-        })
+        if (submission.comments) {
+            const comments = await submission.comments.fetchAll().catch(() => console.log(`Error fetching all ${dataType} comments`))
+            comments.forEach(comment => {
+                submissionsContentData += ' > ' + comment.body.replace(/\n/g, '')
+            })
+        }
         result.push({
             id: submission.id,
+            type: dataType,
             title: submission.title,
             body: submission.selftext === '' ? submission.url : submission.selftext,
-            comments: submissionsContentData
+            comments: submissionsContentData,
         })
     }
 
     return result;
 }
 
-const getCommentsContent = async () => {
-    const spinner = ora(`Fetching ${chalk.magentaBright('comments')} content`).start();
-    const commentsContent = await r.getMe().getComments().fetchAll().catch(() => [])
+const getCommentsContent = async ({ config, onlyLatest }) => {
+    const dataType = 'comments'
 
-    if (!commentsContent || !commentsContent.length) {
-        spinner.fail(`Cannot fetch ${chalk.magentaBright('comments')} data. Try using a new access token.`)
-        return;
-    }
+    const options = getOptions({ dataType, dataIdPrefix: 't1_', config, onlyLatest })
+
+    const spinner = getSpinner(dataType)
+    spinner.start();
+
+    let data = await r.getMe().getComments(options)
+        .then(async listing => {
+            if (!onlyLatest) return await listing.fetchAll()
+            return listing
+        })
+        .catch(error => error.statusCode)
+
+    if (!Array.isArray(data)) return spinner.fail(data)
 
     spinner.succeed();
 
-    return commentsContent.map(item => {
+    return data.map(item => {
         return {
             id: item.id,
+            type: dataType,
             title: item.link_title,
             body: item.body.replace(/\n/gm, ''),
-            link: 'https://www.reddit.com' + item.permalink
+            link: 'https://www.reddit.com' + item.permalink,
         }
     })
 }
@@ -212,6 +278,62 @@ const formatJson = (data) => {
     return JSON.stringify(data)
 }
 
+const loadConfigFile = ({ configFilePath }) => {
+
+    // if the config file does not exist create it
+    if (!fs.existsSync(configFilePath)) {
+        const config = {
+            options: {},
+            data: {
+                saved: {
+                    latest: ''
+                },
+                submissions: {
+                    latest: ''
+                },
+                comments: {
+                    latest: ''
+                },
+                upvoted: {
+                    latest: ''
+                }
+            }
+        }
+        saveConfigFile({ configFilePath, config })
+    }
+
+    const config = fs.readFileSync(configFilePath, { encoding: 'utf-8' }, (err, data) => {
+        if (err) {
+            console.log('reading config file error')
+        } else {
+            return data;
+        }
+    })
+    return JSON.parse(config)
+}
+
+const saveConfigFile = ({ configFilePath, config }) => {
+    fs.writeFileSync(configFilePath, JSON.stringify(config))
+}
+
+const saveLatestEntry = data => {
+    if (!data || !data.length) return []
+
+    // --config
+    const configFilePath = program.config;
+    const config = loadConfigFile({ configFilePath });
+
+    const latestId = data[0].id
+    const dataType = data[0].type
+
+    // save the latest entry of the downloaded data
+    config.data[dataType].latest = latestId
+
+    saveConfigFile({ configFilePath, config })
+
+    return data;
+}
+
 const main = () => {
 
     console.log(heading)
@@ -229,7 +351,7 @@ const main = () => {
     } else {
         formatter = formatCsv
 
-        // if the user provides and incorrect format string e.g. --format=jsozzz
+        // if the user provides an incorrect format string e.g. --format=jsozzz
         // then the formatter will default to csv and reset the format string
         // for the data writer.
         format = 'csv'
@@ -238,41 +360,33 @@ const main = () => {
     // --data
     const dataToDownload = program.data.split(',');
 
-    if (dataToDownload.includes('saved')) {
-        // saved content
-        getSavedContent().then(formatter).then(data => {
-            const directory = rootOutputDirectory + '/saved/'
-            const filename = 'reddit_saved_permalinks';
-            writeDataToFile({ directory, filename, data, format });
-        });
-    }
+    // --config
+    const configFilePath = program.config
+    const config = loadConfigFile({ configFilePath })
 
-    if (dataToDownload.includes('upvoted')) {
-        // upvoted content
-        getUpvotedContent().then(formatter).then(data => {
-            const directory = rootOutputDirectory + '/upvoted/'
-            const filename = 'reddit_upvoted_permalinks';
-            writeDataToFile({ directory, filename, data, format });
-        })
-    }
+    // --onlyLatest
+    let onlyLatest = program.onlyLatest === 'true' ? true : false
 
-    if (dataToDownload.includes('submissions')) {
-        // submissions
-        getSubmissionsContent().then(formatter).then(data => {
-            const directory = rootOutputDirectory + '/submissions/'
-            const filename = 'reddit_submissions';
-            writeDataToFile({ directory, filename, data, format });
-        })
+    const promises = []
+    const dataTypeDownloaderMap = {
+        saved: getSavedContent,
+        upvoted: getUpvotedContent,
+        submissions: getSubmissionsContent,
+        comments: getCommentsContent
     }
+    dataToDownload.forEach(dataType => {
+        const downloader = dataTypeDownloaderMap[dataType]
+        const promise = downloader({ config, onlyLatest })
+            .then(saveLatestEntry)
+            .then(formatter)
+            .then(data => {
+                const filename = `reddit_${dataType}`;
+                return writeDataToFile({ rootOutputDirectory, dataType, filename, data, format });
+            }).catch(error => console.log(error))
+        promises.push(promise)
+    })
 
-    if (dataToDownload.includes('comments')) {
-        // comments
-        getCommentsContent().then(formatter).then(data => {
-            const directory = rootOutputDirectory + '/comments/'
-            const filename = 'reddit_comments';
-            writeDataToFile({ directory, filename, data, format });
-        })
-    }
+    Promise.all(promises)
 }
 
 main();
