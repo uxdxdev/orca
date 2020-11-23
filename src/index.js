@@ -99,7 +99,7 @@ const writeDataToFile = async ({ rootOutputDirectory, dataType, filename, data, 
 }
 
 const getOptions = ({ dataType, dataIdPrefix, config, onlyLatest }) => {
-    let options = config.options;
+    let options = {}
     let data = config.data;
 
     // get the latest entry for this data type
@@ -283,7 +283,6 @@ const loadConfigFile = ({ configFilePath }) => {
     // if the config file does not exist create it
     if (!fs.existsSync(configFilePath)) {
         const config = {
-            options: {},
             data: {
                 saved: {
                     latest: ''
