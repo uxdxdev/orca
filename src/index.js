@@ -77,8 +77,8 @@ const writeDataToFile = async ({ rootOutputDirectory, dataType, filename, data, 
     const directory = rootOutputDirectory + '/' + dataType + '/'
     const spinner = ora(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`).start();
 
-    if (!data || !data.length) {
-        spinner.fail(`No data to write to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`)
+    if (!data) {
+        spinner.fail(`Cannot write invalid ${chalk.magentaBright(`${directory + filename + fileExtension}`)} data`)
         return;
     }
 
