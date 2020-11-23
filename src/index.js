@@ -54,7 +54,7 @@ npx @mortond/orca --access-token=${chalk.blue(accessToken)}
     .option('--only-latest', 'Only download the latest data. See orca.config.json')
     .option('--data <type>', 'Data to download in a comma separated string e.g. upvoted,saved', 'upvoted,saved,submissions,comments')
     .option('--config-dir <directory>', 'Path to directory containing orca.config.json file', './')
-    .option('--output-dir <directory>', 'Output directory for data files', 'orca-output')
+    .option('--output-dir <directory>', 'Output directory for data files', './orca-output')
     .option('--format <format>', 'Format of the downloaded data e.g. csv, text, json', 'csv')
     .option('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
     .option('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
@@ -344,7 +344,7 @@ const main = () => {
     console.log(heading)
 
     // --output-dir
-    let rootOutputDirectory = program.outputDir;
+    let rootOutputDirectory = program.outputDir.replace(/\/$/, '');
 
     // --format
     let formatter;
