@@ -52,7 +52,7 @@ npx @mortond/orca --access-token=${chalk.blue(accessToken)}
     .option('--data <string>', 'Data to download in a comma separated string e.g. upvoted,saved', 'upvoted,saved,submissions,comments')
     .option('--output-dir <directory>', 'Output directory for data files', 'orca-output')
     .option('--format <string>', 'Format of the downloaded data e.g. csv, text, json', 'csv')
-    .option('--only-latest <boolean>', 'Only download the latest data. See orca.config.json', false)
+    .option('--only-latest', 'Only download the latest data. See orca.config.json')
     .option('--config <string>', 'Path to Orca configuration file', './orca.config.json')
     .option('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
     .option('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
@@ -365,7 +365,7 @@ const main = () => {
     const config = loadConfigFile({ configFilePath })
 
     // --onlyLatest
-    let onlyLatest = program.onlyLatest === 'true' ? true : false
+    let onlyLatest = program.onlyLatest
 
     const promises = []
     const dataTypeDownloaderMap = {
