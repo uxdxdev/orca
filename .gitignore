@@ -5,3 +5,4 @@ orca-output
 .DS_Store
 package-lock.json
 orca.config.json
+.vscode

@@ -12,6 +12,8 @@ const clientSecret = 'z1KNAUb_c0MF7_FAKE_hGyR8lfHCQjnzJtGw'
 const accessToken = '70162531-eWBggyup_FAKE_Usdf1cz7u-G9pM_dhrVf3g'
 const heading = boxen(`${chalk.magentaBright('Orca')} - ${chalk.bold('Download your Reddit data.')}`, { padding: 1, margin: 1, borderStyle: 'round' })
 
+const configFileName = 'orca.config.json'
+
 program
     .name("orca")
     .usage("--access-token=<token>")
@@ -49,11 +51,11 @@ Setup steps:
 
 npx @mortond/orca --access-token=${chalk.blue(accessToken)}
 `)
-    .option('--data <string>', 'Data to download in a comma separated string e.g. upvoted,saved', 'upvoted,saved,submissions,comments')
-    .option('--output-dir <directory>', 'Output directory for data files', 'orca-output')
-    .option('--format <string>', 'Format of the downloaded data e.g. csv, text, json', 'csv')
     .option('--only-latest', 'Only download the latest data. See orca.config.json')
-    .option('--config <string>', 'Path to Orca configuration file', './orca.config.json')
+    .option('--data <type>', 'Data to download in a comma separated string e.g. upvoted,saved', 'upvoted,saved,submissions,comments')
+    .option('--config-dir <directory>', 'Path to directory containing orca.config.json file', './')
+    .option('--output-dir <directory>', 'Output directory for data files', 'orca-output')
+    .option('--format <format>', 'Format of the downloaded data e.g. csv, text, json', 'csv')
     .option('--client-id <id>', 'Reddit application client Id. See https://www.reddit.com/prefs/apps/')
     .option('--client-secret <secret>', 'Reddit application client secret. See https://www.reddit.com/prefs/apps/')
     .option('--access-token <token>', 'Access token generated using https://not-an-aardvark.github.io/reddit-oauth-helper/. This token type is only valid for a short time')
@@ -278,7 +280,10 @@ const formatJson = (data) => {
     return JSON.stringify(data)
 }
 
-const loadConfigFile = ({ configFilePath }) => {
+const loadConfigFile = () => {
+
+    // --config
+    const configFilePath = program.configDir + configFileName;
 
     // if the config file does not exist create it
     if (!fs.existsSync(configFilePath)) {
@@ -311,16 +316,17 @@ const loadConfigFile = ({ configFilePath }) => {
     return JSON.parse(config)
 }
 
-const saveConfigFile = ({ configFilePath, config }) => {
+const saveConfigFile = ({ config }) => {
+    // --config
+    const configFilePath = program.configDir + configFileName;
+
     fs.writeFileSync(configFilePath, JSON.stringify(config))
 }
 
 const saveLatestEntry = data => {
     if (!data || !data.length) return []
 
-    // --config
-    const configFilePath = program.config;
-    const config = loadConfigFile({ configFilePath });
+    const config = loadConfigFile();
 
     const latestId = data[0].id
     const dataType = data[0].type
@@ -328,7 +334,7 @@ const saveLatestEntry = data => {
     // save the latest entry of the downloaded data
     config.data[dataType].latest = latestId
 
-    saveConfigFile({ configFilePath, config })
+    saveConfigFile({ config })
 
     return data;
 }
@@ -360,7 +366,7 @@ const main = () => {
     const dataToDownload = program.data.split(',');
 
     // --config
-    const configFilePath = program.config
+    const configFilePath = program.configDir + configFileName
     const config = loadConfigFile({ configFilePath })
 
     // --onlyLatest
