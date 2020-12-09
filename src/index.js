@@ -77,27 +77,31 @@ r.config({ continueAfterRatelimitError: true });
 const writeDataToFile = async ({ rootOutputDirectory, dataType, filename, data, format }) => {
     const fileExtension = '.' + format
     const directory = rootOutputDirectory + '/' + dataType + '/'
-    const spinner = ora(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`).start();
+    const spinner = getSpinner(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`).start();
 
     if (!data) {
         spinner.fail(`Cannot write invalid ${chalk.magentaBright(`${directory + filename + fileExtension}`)} data`)
         return;
     }
 
-    fs.mkdir(directory, { recursive: true }, (err) => {
-        if (err) {
-            spinner.fail(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`)
-            throw err;
-        }
-
-        fs.writeFile(directory + filename + fileExtension, data, err => {
+    return new Promise((resolve, reject) => {
+        fs.mkdir(directory, { recursive: true }, (err) => {
             if (err) {
-                spinner.fail()
-                throw err;
+                spinner.fail(`Writing data to ${chalk.magentaBright(`${directory + filename + fileExtension}`)}`)
+                reject(err);
             }
-            spinner.succeed()
+
+            fs.writeFile(directory + filename + fileExtension, data, err => {
+                if (err) {
+                    spinner.fail(err)
+                    reject(err);
+                }
+                spinner.succeed()
+                resolve();
+            });
         });
-    });
+    })
+
 }
 
 const getOptions = ({ dataType, dataIdPrefix, config, onlyLatest }) => {
@@ -114,11 +118,14 @@ const getOptions = ({ dataType, dataIdPrefix, config, onlyLatest }) => {
     return options
 }
 
-const getSpinner = (dataType) => {
-    const spinner = ora(`Fetching ${chalk.magentaBright(dataType)} content`)
+const getSpinner = (text) => {
+    const spinner = ora({
+        prefixText: ' ',
+        text: text
+    })
     return {
         start: () => spinner.start(),
-        fail: (error) => spinner.fail(`Failed to fetch ${chalk.magentaBright(dataType)} content. ${error}`),
+        fail: (error) => spinner.fail(error),
         succeed: () => spinner.succeed()
     }
 
@@ -128,7 +135,7 @@ const getSavedContent = async ({ config, onlyLatest }) => {
 
     const options = getOptions({ dataType, dataIdPrefix: 't3_', config, onlyLatest })
 
-    const spinner = getSpinner(dataType)
+    const spinner = getSpinner(`Fetching ${chalk.magentaBright(dataType)} content`)
     spinner.start();
 
     let data = await r.getMe().getSavedContent(options)
@@ -139,7 +146,10 @@ const getSavedContent = async ({ config, onlyLatest }) => {
         .catch(error => error.statusCode)
 
 
-    if (!Array.isArray(data)) return spinner.fail(data)
+    if (!Array.isArray(data)) {
+        spinner.fail(`Failed to fetch ${chalk.magentaBright(dataType)} content. ${data}`)
+        throw data
+    }
 
     spinner.succeed();
 
@@ -157,7 +167,7 @@ const getUpvotedContent = async ({ config, onlyLatest }) => {
 
     const options = getOptions({ dataType, dataIdPrefix: 't3_', config, onlyLatest })
 
-    const spinner = getSpinner(dataType)
+    const spinner = getSpinner(`Fetching ${chalk.magentaBright(dataType)} content`)
     spinner.start();
 
     let data = await r.getMe().getUpvotedContent(options)
@@ -167,7 +177,10 @@ const getUpvotedContent = async ({ config, onlyLatest }) => {
         })
         .catch(error => error.statusCode)
 
-    if (!Array.isArray(data)) return spinner.fail(data)
+    if (!Array.isArray(data)) {
+        spinner.fail(`Failed to fetch ${chalk.magentaBright(dataType)} content. ${data}`)
+        throw data;
+    }
 
     spinner.succeed()
 
@@ -185,7 +198,7 @@ const getSubmissionsContent = async ({ config, onlyLatest }) => {
 
     const options = getOptions({ dataType, dataIdPrefix: 't3_', config, onlyLatest })
 
-    const spinner = getSpinner(dataType)
+    const spinner = getSpinner(`Fetching ${chalk.magentaBright(dataType)} content`)
     spinner.start();
 
     let data = await r.getMe().getSubmissions(options)
@@ -196,7 +209,10 @@ const getSubmissionsContent = async ({ config, onlyLatest }) => {
         .catch(error => error.statusCode)
 
 
-    if (!Array.isArray(data)) return spinner.fail(data)
+    if (!Array.isArray(data)) {
+        spinner.fail(`Failed to fetch ${chalk.magentaBright(dataType)} content. ${data}`)
+        throw data
+    }
 
     spinner.succeed();
 
@@ -226,7 +242,7 @@ const getCommentsContent = async ({ config, onlyLatest }) => {
 
     const options = getOptions({ dataType, dataIdPrefix: 't1_', config, onlyLatest })
 
-    const spinner = getSpinner(dataType)
+    const spinner = getSpinner(`Fetching ${chalk.magentaBright(dataType)} content`)
     spinner.start();
 
     let data = await r.getMe().getComments(options)
@@ -236,7 +252,10 @@ const getCommentsContent = async ({ config, onlyLatest }) => {
         })
         .catch(error => error.statusCode)
 
-    if (!Array.isArray(data)) return spinner.fail(data)
+    if (!Array.isArray(data)) {
+        spinner.fail(`Failed to fetch ${chalk.magentaBright(dataType)} content. ${data}`)
+        throw data
+    }
 
     spinner.succeed();
 
@@ -387,11 +406,13 @@ const main = () => {
             .then(data => {
                 const filename = `reddit_${dataType}`;
                 return writeDataToFile({ rootOutputDirectory, dataType, filename, data, format });
-            }).catch(error => console.log(error))
+            }).catch(error => {
+                // do nothing
+            })
         promises.push(promise)
     })
 
-    Promise.all(promises)
+    Promise.all(promises).then(() => console.log('\n'))
 }
 
 main();

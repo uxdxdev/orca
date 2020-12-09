@@ -1,6 +1,6 @@
 # Orca 
 
-![Orca](orca.png)
+![Orca](orca-snapshot.png)
 
 Download your Reddit data:
 - Upvoted
