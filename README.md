@@ -2,7 +2,7 @@
 
 ![Orca](orca-snapshot.png)
 
-Download your Reddit data:
+Orca is a CLI tool for downloading your Reddit data;
 - Upvoted
 - Saved
 - Submissions
